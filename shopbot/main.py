@@ -169,8 +169,11 @@ if static_dir and os.path.exists(static_dir):
         pass
 
 
+from shopbot.templates import STOREFRONT_HTML, ADMIN_HTML
+
+
 def load_html(filename: str) -> str:
-    """Safely loads HTML from multiple possible deployment paths."""
+    """Safely loads HTML from multiple possible deployment paths with embedded fallback."""
     search_paths = [
         os.path.join(os.path.dirname(__file__), "static", filename),
         os.path.join(os.getcwd(), "shopbot", "static", filename),
@@ -192,14 +195,10 @@ def load_html(filename: str) -> str:
 @app.get("/", response_class=HTMLResponse)
 def serve_customer_storefront():
     content = load_html("index.html")
-    if content:
-        return HTMLResponse(content=content, status_code=200)
-    return HTMLResponse(content="<h2>ShopBot Storefront Loading...</h2><p>Please refresh in a moment.</p>", status_code=200)
+    return HTMLResponse(content=content or STOREFRONT_HTML, status_code=200)
 
 
 @app.get("/admin", response_class=HTMLResponse)
 def serve_admin_dashboard():
     content = load_html("admin.html")
-    if content:
-        return HTMLResponse(content=content, status_code=200)
-    return HTMLResponse(content="<h2>Seller Admin Dashboard Loading...</h2>", status_code=200)
+    return HTMLResponse(content=content or ADMIN_HTML, status_code=200)
