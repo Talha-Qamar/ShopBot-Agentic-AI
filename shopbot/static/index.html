@@ -6,161 +6,273 @@
   <title>Roast & Brew | AI-Powered Artisan Storefront</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    .chat-scroll::-webkit-scrollbar { width: 6px; }
-    .chat-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    code, .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .chat-scroll::-webkit-scrollbar { width: 5px; }
+    .chat-scroll::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 9999px; }
+    @keyframes pulse-subtle { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    .animate-pulse-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
   </style>
 </head>
-<body class="bg-stone-50 text-stone-900 font-sans min-h-screen flex flex-col">
+<body class="bg-[#faf8f5] text-stone-900 min-h-screen flex flex-col selection:bg-amber-200">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
   <!-- Navigation Bar -->
-  <header class="bg-stone-900 text-stone-100 sticky top-0 z-40 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <span class="text-amber-500 text-2xl"><i class="fa-solid fa-mug-hot"></i></span>
+  <header class="bg-stone-900/95 backdrop-blur-md text-stone-100 sticky top-0 z-40 border-b border-stone-800 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-stone-950 text-xl font-bold shadow-md shadow-amber-500/20">
+          <i class="fa-solid fa-mug-hot"></i>
+        </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight">Roast & Brew <span class="text-xs bg-amber-500/20 text-amber-400 font-mono px-2 py-0.5 rounded ml-2">ShopBot AI</span></h1>
-          <p class="text-xs text-stone-400">Artisan Coffee & Specialty Gear</p>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-extrabold tracking-tight">Roast & Brew</h1>
+            <span class="text-[10px] bg-amber-500/20 text-amber-300 font-mono font-semibold px-2 py-0.5 rounded-full border border-amber-500/30">AI Storefront</span>
+          </div>
+          <p class="text-[11px] text-stone-400 font-medium">Artisan Coffee & Specialty Gear • Track 1</p>
         </div>
       </div>
 
-      <!-- User Persona Switcher (For Evaluation & Isolation Demo) -->
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center bg-stone-800 px-3 py-1.5 rounded-lg border border-stone-700">
-          <label class="text-xs text-stone-400 mr-2 flex items-center"><i class="fa-solid fa-user mr-1 text-amber-400"></i> Persona:</label>
-          <select id="userSelector" class="bg-stone-900 text-xs text-amber-300 font-medium focus:outline-none rounded px-2 py-1 cursor-pointer" onchange="switchUser()">
-            <option value="user_sara">Sara (Loves Dark Roast)</option>
-            <option value="user_omar">Omar (Specialty Brews)</option>
-            <option value="user_guest">Guest Buyer (user_guest)</option>
+      <!-- Right Controls: Persona Switcher, Cart Button, Admin Link -->
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        
+        <!-- Persona Switcher -->
+        <div class="flex items-center bg-stone-800/90 px-3 py-1.5 rounded-xl border border-stone-700 shadow-inner">
+          <label class="text-[11px] text-stone-400 mr-2 hidden md:inline-flex items-center">
+            <i class="fa-solid fa-user-tag text-amber-400 mr-1.5"></i> Customer:
+          </label>
+          <select id="userSelector" class="bg-transparent text-xs text-amber-300 font-semibold focus:outline-none cursor-pointer" onchange="switchUser()">
+            <option value="user_sara" class="bg-stone-900">Sara (Loves Dark Roast)</option>
+            <option value="user_omar" class="bg-stone-900">Omar (Ethiopian / Pour-Over)</option>
+            <option value="user_guest" class="bg-stone-900">Guest Buyer (New Customer)</option>
           </select>
         </div>
 
-        <a href="/admin" class="text-xs bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold px-3 py-2 rounded-lg transition flex items-center space-x-1">
-          <i class="fa-solid fa-chart-line"></i>
-          <span>Seller Admin</span>
+        <!-- Slide-over Cart Trigger -->
+        <button onclick="toggleCartDrawer()" class="relative p-2 text-stone-300 hover:text-white transition flex items-center justify-center rounded-xl hover:bg-stone-800">
+          <i class="fa-solid fa-basket-shopping text-lg"></i>
+          <span id="cartBadge" class="absolute -top-1 -right-1 bg-amber-500 text-stone-950 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow">0</span>
+        </button>
+
+        <!-- Admin Dashboard Link -->
+        <a href="/admin" class="text-xs bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold px-3.5 py-2 rounded-xl transition shadow-md shadow-amber-500/20 flex items-center space-x-1.5">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span class="hidden sm:inline">Seller Admin</span>
         </a>
       </div>
     </div>
   </header>
 
-  <!-- Main Store Layout -->
-  <div class="max-w-7xl mx-auto px-4 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+  <!-- Main Store Grid -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-7 w-full">
     
-    <!-- Left Column: Catalog & Products (8 Cols) -->
+    <!-- Left Column: Catalog & Interactive Store (7 / 8 Cols) -->
     <main class="lg:col-span-7 xl:col-span-8 flex flex-col space-y-6">
       
-      <!-- Store Banner -->
-      <div class="bg-gradient-to-r from-stone-900 via-stone-800 to-amber-950 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-        <div class="relative z-10 max-w-xl">
-          <span class="text-xs font-semibold uppercase tracking-wider text-amber-400 bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-800">
-            Powered by LangGraph & Claude Haiku
-          </span>
-          <h2 class="text-2xl sm:text-3xl font-extrabold mt-3">Curated Artisan Beans & Handcrafted Gear</h2>
-          <p class="text-stone-300 text-sm mt-2">Chat with our 24/7 AI Sales Assistant to get personalized coffee recommendations, check live stock, or place an order.</p>
-        </div>
-        <div class="absolute right-4 bottom-2 text-stone-800 opacity-20 text-9xl pointer-events-none">
+      <!-- Hero Banner -->
+      <div class="relative bg-stone-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl overflow-hidden border border-stone-800">
+        <div class="absolute -right-10 -bottom-10 text-stone-800/40 text-[200px] pointer-events-none select-none">
           <i class="fa-solid fa-seedling"></i>
+        </div>
+        <div class="relative z-10 max-w-xl">
+          <div class="inline-flex items-center space-x-2 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs px-3 py-1 rounded-full font-semibold mb-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>ShopBot AI Sales Agent Live • Claude Haiku</span>
+          </div>
+          <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-50 leading-tight">
+            Small Batch Roasted Beans & Handcrafted Gear
+          </h2>
+          <p class="text-stone-300 text-sm mt-3 leading-relaxed">
+            Personalized recommendations, live inventory checks, and instant ordering powered by our autonomous LangGraph sales assistant.
+          </p>
         </div>
       </div>
 
-      <!-- Categories & Search Bar -->
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0" id="categoryChips">
-          <button onclick="filterCategory('')" class="category-btn active px-3.5 py-1.5 rounded-full text-xs font-medium bg-amber-600 text-stone-950 transition">All</button>
-          <button onclick="filterCategory('Coffee')" class="category-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 hover:bg-stone-300 transition">Coffee</button>
-          <button onclick="filterCategory('Brewing Gear')" class="category-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 hover:bg-stone-300 transition">Brewing Gear</button>
-          <button onclick="filterCategory('Drinkware')" class="category-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 hover:bg-stone-300 transition">Drinkware</button>
-          <button onclick="filterCategory('Pantry')" class="category-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 hover:bg-stone-300 transition">Pantry</button>
+      <!-- Categories & Interactive Search -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0" id="categoryChips">
+          <button onclick="filterCategory('')" class="category-btn active px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-stone-950 shadow-sm transition">All Items</button>
+          <button onclick="filterCategory('Coffee')" class="category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition">Coffee</button>
+          <button onclick="filterCategory('Brewing Gear')" class="category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition">Brewing Gear</button>
+          <button onclick="filterCategory('Drinkware')" class="category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition">Drinkware</button>
+          <button onclick="filterCategory('Pantry')" class="category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition">Pantry</button>
         </div>
 
         <div class="relative w-full sm:w-64">
-          <input type="text" id="searchInput" placeholder="Search catalog..." oninput="handleSearch()" class="w-full pl-9 pr-4 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
-          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-stone-400 text-xs"></i>
+          <input type="text" id="searchInput" placeholder="Search products or tastes..." oninput="handleSearch()" class="w-full pl-9 pr-4 py-2.5 text-xs bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm transition text-stone-800">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-stone-400 text-xs"></i>
         </div>
       </div>
 
       <!-- Products Grid -->
       <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-        <div class="text-center py-12 text-stone-500 col-span-full">Loading catalog...</div>
+        <div class="col-span-full py-16 text-center text-stone-400 flex flex-col items-center justify-center space-y-2">
+          <i class="fa-solid fa-circle-notch fa-spin text-amber-500 text-2xl"></i>
+          <span class="text-xs font-medium">Curating store catalog...</span>
+        </div>
       </div>
     </main>
 
-    <!-- Right Column: Interactive AI Sales Agent (5 Cols) -->
-    <aside class="lg:col-span-5 xl:col-span-4 flex flex-col bg-white rounded-2xl border border-stone-200 shadow-xl overflow-hidden h-[680px]">
+    <!-- Right Column: Interactive AI Sales Agent Assistant (5 / 4 Cols) -->
+    <aside class="lg:col-span-5 xl:col-span-4 flex flex-col bg-white rounded-3xl border border-stone-200/80 shadow-xl overflow-hidden h-[730px] sticky top-20">
       
-      <!-- Agent Header -->
-      <div class="bg-stone-900 text-white p-4 flex items-center justify-between border-b border-stone-800">
+      <!-- Agent Top Header -->
+      <div class="bg-gradient-to-r from-stone-900 to-stone-800 text-white p-4 flex items-center justify-between border-b border-stone-800">
         <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-full bg-amber-500 flex items-center justify-center text-stone-950 font-bold text-lg shadow-sm">
-            <i class="fa-solid fa-robot"></i>
+          <div class="relative">
+            <div class="w-10 h-10 rounded-2xl bg-amber-500 flex items-center justify-center text-stone-950 font-bold text-lg shadow">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-stone-900 rounded-full"></span>
           </div>
           <div>
             <h3 class="font-bold text-sm text-stone-100 flex items-center">
-              ShopBot Assistant
-              <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 ml-2 animate-pulse"></span>
+              ShopBot Sales Agent
+              <span class="text-[9px] bg-emerald-500/20 text-emerald-300 font-mono px-1.5 py-0.5 rounded ml-2 font-semibold">Online</span>
             </h3>
-            <p class="text-[11px] text-stone-400" id="sessionThreadLabel">Session: thread_sara_1</p>
+            <p class="text-[10px] text-stone-400 font-mono truncate" id="sessionThreadLabel">thread_sara_1</p>
           </div>
         </div>
-        <button onclick="clearChatThread()" title="New Thread" class="text-stone-400 hover:text-amber-400 text-xs p-1.5 transition">
-          <i class="fa-solid fa-arrows-rotate"></i> Reset
+        <button onclick="resetConversationThread()" title="New Chat Session" class="text-stone-400 hover:text-amber-400 text-xs px-2.5 py-1.5 rounded-lg hover:bg-stone-800 transition flex items-center space-x-1">
+          <i class="fa-solid fa-arrows-rotate text-[11px]"></i>
+          <span class="text-[11px]">Reset</span>
         </button>
       </div>
 
-      <!-- Memory Context Pill -->
-      <div class="bg-amber-50 border-b border-amber-200/60 px-4 py-2 flex items-center justify-between text-[11px] text-amber-900">
-        <span class="flex items-center truncate">
-          <i class="fa-solid fa-brain text-amber-600 mr-1.5"></i>
-          <span id="activeUserBadge" class="font-semibold mr-1">User: user_sara</span>
-          <span id="activePreferencesSnippet" class="text-amber-700 truncate">(No preferences yet)</span>
+      <!-- Long-Term Memory & Persona Context Card -->
+      <div class="bg-amber-50/70 border-b border-amber-200/60 px-4 py-2.5 flex items-center justify-between text-xs text-amber-950">
+        <div class="flex items-center space-x-2 truncate">
+          <i class="fa-solid fa-brain text-amber-600"></i>
+          <div class="truncate">
+            <span class="font-bold text-stone-900" id="activeUserBadge">Sara</span>
+            <span class="text-stone-500 text-[11px] truncate" id="activePreferencesSnippet">• Memory: Loading...</span>
+          </div>
+        </div>
+        <span id="tokenCounter" class="bg-amber-200/60 text-amber-900 font-mono text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+          In: 0 | Out: 0
         </span>
-        <span id="tokenCounter" class="bg-amber-200/70 text-amber-950 px-1.5 py-0.5 rounded font-mono text-[10px]">Tokens: 0</span>
       </div>
 
-      <!-- Quick Action Prompt Chips -->
-      <div class="px-3 py-2 bg-stone-50 border-b border-stone-200 flex space-x-1.5 overflow-x-auto text-[11px]">
-        <button onclick="sendQuickPrompt('What dark roast coffee do you have in stock?')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-stone-300 hover:border-amber-500 text-stone-700 transition">☕ Dark Roast</button>
-        <button onclick="sendQuickPrompt('Check inventory and price for the kettle')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-stone-300 hover:border-amber-500 text-stone-700 transition">🔍 Check Kettle</button>
-        <button onclick="sendQuickPrompt('I prefer dark roast and pour-over brewing')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-stone-300 hover:border-amber-500 text-stone-700 transition">💾 Save Preference</button>
-        <button onclick="sendQuickPrompt('What are my past orders?')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-stone-300 hover:border-amber-500 text-stone-700 transition">📦 My Orders</button>
+      <!-- Dynamic Suggestion Quick Chips -->
+      <div class="px-3.5 py-2 bg-stone-50 border-b border-stone-100 flex space-x-1.5 overflow-x-auto text-[11px] scrollbar-none" id="quickChipsContainer">
+        <button onclick="sendQuickPrompt('What dark roast coffee do you have in stock?')" class="whitespace-nowrap px-3 py-1 rounded-full bg-white border border-stone-200 hover:border-amber-400 text-stone-700 transition flex items-center space-x-1 shadow-2xs">
+          <span>☕</span> <span>Dark Roast</span>
+        </button>
+        <button onclick="sendQuickPrompt('Check inventory and pricing for the kettle prod_4')" class="whitespace-nowrap px-3 py-1 rounded-full bg-white border border-stone-200 hover:border-amber-400 text-stone-700 transition flex items-center space-x-1 shadow-2xs">
+          <span>🔍</span> <span>Check Kettle</span>
+        </button>
+        <button onclick="sendQuickPrompt('I prefer pour-over brewing with light roast')" class="whitespace-nowrap px-3 py-1 rounded-full bg-white border border-stone-200 hover:border-amber-400 text-stone-700 transition flex items-center space-x-1 shadow-2xs">
+          <span>💾</span> <span>Save Taste</span>
+        </button>
+        <button onclick="sendQuickPrompt('What are my past orders?')" class="whitespace-nowrap px-3 py-1 rounded-full bg-white border border-stone-200 hover:border-amber-400 text-stone-700 transition flex items-center space-x-1 shadow-2xs">
+          <span>📦</span> <span>My History</span>
+        </button>
       </div>
 
       <!-- Chat Messages Container -->
-      <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3.5 chat-scroll bg-stone-50/50">
-        <!-- Initial Welcome Message -->
+      <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3.5 chat-scroll bg-stone-50/40">
         <div class="flex items-start space-x-2.5">
-          <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold">
+          <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold shadow-xs">
             <i class="fa-solid fa-robot"></i>
           </div>
-          <div class="bg-white p-3 rounded-2xl rounded-tl-sm border border-stone-200 shadow-sm text-xs text-stone-800 leading-relaxed max-w-[85%]">
-            Hello! I am <strong>ShopBot</strong>, your personal shopping assistant. Ask me about our single-origin coffees, brewing gear, real-time inventory, or tell me your tastes and I'll remember them!
+          <div class="bg-white p-3.5 rounded-2xl rounded-tl-sm border border-stone-200/80 shadow-xs text-xs text-stone-800 leading-relaxed max-w-[85%]">
+            Hello! I am <strong>ShopBot</strong>, your personal sales assistant. I can recommend coffees matched to your tastes, check live stock, calculate discounts, or help you order. How can I help you today?
           </div>
         </div>
       </div>
 
-      <!-- Order Confirmation Modal / Alert Banner (When Risky Action Triggered) -->
-      <div id="riskConfirmBanner" class="hidden bg-amber-100 border-t border-amber-300 p-3 text-xs text-amber-950 flex flex-col space-y-2">
-        <div class="flex items-center font-bold text-amber-900">
-          <i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1.5"></i>
-          Risky Action Guard: Order Confirmation
+      <!-- Risky Action Confirmation Banner (Triggered when buying) -->
+      <div id="riskConfirmBanner" class="hidden bg-amber-50 border-t-2 border-amber-500 p-3.5 text-xs text-stone-800 flex flex-col space-y-2">
+        <div class="flex items-center text-amber-900 font-bold">
+          <i class="fa-solid fa-shield-halved text-amber-600 mr-2 text-sm"></i>
+          <span>Order Confirmation Required (Risky Action Guard)</span>
         </div>
-        <p id="riskConfirmText">Please confirm your order before funds are committed.</p>
-        <div class="flex space-x-2">
-          <button onclick="sendQuickPrompt('YES')" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded text-xs transition">Confirm (YES)</button>
-          <button onclick="sendQuickPrompt('NO')" class="flex-1 bg-stone-300 hover:bg-stone-400 text-stone-800 font-medium py-1.5 px-3 rounded text-xs transition">Cancel (NO)</button>
+        <p id="riskConfirmText" class="text-stone-600 text-[11px]">Please verify your purchase details before proceeding.</p>
+        <div class="flex space-x-2 pt-1">
+          <button onclick="sendQuickPrompt('YES')" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-xl text-xs transition shadow-xs flex items-center justify-center space-x-1">
+            <i class="fa-solid fa-check"></i>
+            <span>Confirm Order (YES)</span>
+          </button>
+          <button onclick="sendQuickPrompt('NO')" class="flex-1 bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold py-1.5 px-3 rounded-xl text-xs transition flex items-center justify-center space-x-1">
+            <i class="fa-solid fa-xmark"></i>
+            <span>Cancel (NO)</span>
+          </button>
         </div>
       </div>
 
       <!-- Input Bar -->
       <form id="chatForm" onsubmit="handleChatSubmit(event)" class="p-3 bg-white border-t border-stone-200 flex items-center space-x-2">
-        <input type="text" id="chatInput" placeholder="Ask about products, stock, or buy an item..." class="flex-1 bg-stone-100 border border-stone-300 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 text-stone-900">
-        <button type="submit" id="sendBtn" class="bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1 shadow-sm">
+        <input type="text" id="chatInput" placeholder="Ask about beans, stock, or say 'buy 2 prod_1'..." class="flex-1 bg-stone-100/80 border border-stone-300/80 rounded-2xl px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 text-stone-900">
+        <button type="submit" id="sendBtn" class="bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold px-4 py-2.5 rounded-2xl text-xs transition shadow-sm flex items-center space-x-1.5">
           <span>Send</span>
           <i class="fa-solid fa-paper-plane text-[10px]"></i>
         </button>
       </form>
-
     </aside>
+  </div>
+
+  <!-- Interactive Slide-over Cart Drawer -->
+  <div id="cartDrawer" class="fixed inset-0 z-50 overflow-hidden pointer-events-none transition-all duration-300">
+    <div id="cartBackdrop" onclick="toggleCartDrawer()" class="absolute inset-0 bg-stone-950/40 backdrop-blur-xs opacity-0 transition-opacity duration-300"></div>
+    <div id="cartPanel" class="absolute inset-y-0 right-0 max-w-full flex pl-10 transform translate-x-full transition-transform duration-300 ease-in-out">
+      <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col pointer-events-auto">
+        
+        <!-- Cart Drawer Header -->
+        <div class="p-5 bg-stone-900 text-white flex items-center justify-between">
+          <div class="flex items-center space-x-2.5">
+            <i class="fa-solid fa-basket-shopping text-amber-400 text-lg"></i>
+            <h3 class="font-bold text-base">Your Shopping Cart</h3>
+          </div>
+          <button onclick="toggleCartDrawer()" class="text-stone-400 hover:text-white p-1 rounded-lg">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Cart Items List -->
+        <div id="cartItemsList" class="flex-1 p-5 overflow-y-auto space-y-3.5 divide-y divide-stone-100">
+          <div class="py-12 text-center text-stone-400 text-xs">Your shopping cart is empty.</div>
+        </div>
+
+        <!-- Cart Footer -->
+        <div class="p-5 bg-stone-50 border-t border-stone-200 space-y-3">
+          <div class="flex items-center justify-between text-xs text-stone-600">
+            <span>Subtotal</span>
+            <span id="cartSubtotal" class="font-bold text-stone-900">$0.00</span>
+          </div>
+          <div class="flex items-center justify-between text-xs text-emerald-600">
+            <span>Coupon / Discounts</span>
+            <span id="cartDiscount">-$0.00</span>
+          </div>
+          <div class="flex items-center justify-between text-sm font-extrabold text-stone-900 pt-2 border-t border-stone-200">
+            <span>Estimated Total</span>
+            <span id="cartTotal" class="text-amber-600 text-base">$0.00</span>
+          </div>
+          <button onclick="checkoutViaAgent()" class="w-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold py-3 rounded-2xl text-xs transition shadow-md shadow-amber-500/20 flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-robot"></i>
+            <span>Complete Order via ShopBot AI</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Product Quick-View Modal -->
+  <div id="productModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/50 backdrop-blur-xs hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-stone-200 relative animate-in fade-in zoom-in duration-200">
+      <button onclick="closeProductModal()" class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-stone-900/60 text-white flex items-center justify-center hover:bg-stone-900 transition z-10">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+      <div id="productModalContent"></div>
+    </div>
   </div>
 
   <!-- Storefront Logic Script -->
@@ -169,6 +281,7 @@
     let currentThreadId = `thread_${currentUserId}_${Date.now()}`;
     let catalog = [];
     let currentCategory = "";
+    let cart = [];
     let totalTokensIn = 0;
     let totalTokensOut = 0;
 
@@ -189,9 +302,10 @@
         const profile = await res.json();
         const snippet = document.getElementById("activePreferencesSnippet");
         if (profile && Object.keys(profile).length > 0) {
-          snippet.innerText = `(${JSON.stringify(profile).replace(/[\{\}\"]/g, '')})`;
+          const formatted = Object.entries(profile).map(([k,v]) => `${k}: ${v}`).join(' | ');
+          snippet.innerText = `• Taste Memory: ${formatted}`;
         } else {
-          snippet.innerText = "(No preferences yet)";
+          snippet.innerText = "• Memory: No preferences recorded yet";
         }
       } catch (e) {}
     }
@@ -199,38 +313,41 @@
     function switchUser() {
       currentUserId = document.getElementById("userSelector").value;
       currentThreadId = `thread_${currentUserId}_${Date.now()}`;
-      document.getElementById("activeUserBadge").innerText = `User: ${currentUserId}`;
-      document.getElementById("sessionThreadLabel").innerText = `Session: ${currentThreadId.slice(0, 20)}...`;
       
-      // Clear chat messages for new user
+      const displayName = currentUserId === 'user_sara' ? 'Sara' : currentUserId === 'user_omar' ? 'Omar' : 'Guest';
+      document.getElementById("activeUserBadge").innerText = displayName;
+      document.getElementById("sessionThreadLabel").innerText = currentThreadId.slice(0, 22) + "...";
+      
       const container = document.getElementById("chatMessages");
       container.innerHTML = `
         <div class="flex items-start space-x-2.5">
-          <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold">
+          <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold shadow-xs">
             <i class="fa-solid fa-robot"></i>
           </div>
-          <div class="bg-white p-3 rounded-2xl rounded-tl-sm border border-stone-200 shadow-sm text-xs text-stone-800 leading-relaxed max-w-[85%]">
-            Switched to persona <strong>${currentUserId}</strong>. All chats, carts, and past orders are strictly isolated from other users!
+          <div class="bg-white p-3.5 rounded-2xl rounded-tl-sm border border-stone-200/80 shadow-xs text-xs text-stone-800 leading-relaxed max-w-[85%]">
+            Switched to customer profile <strong>${displayName}</strong> (${currentUserId}). All long-term tastes, past orders, and carts are strictly isolated!
           </div>
         </div>
       `;
       loadUserProfile();
+      showToast(`Switched persona to ${displayName}`, "info");
     }
 
-    function clearChatThread() {
+    function resetConversationThread() {
       currentThreadId = `thread_${currentUserId}_${Date.now()}`;
-      document.getElementById("sessionThreadLabel").innerText = `Session: ${currentThreadId.slice(0, 20)}...`;
+      document.getElementById("sessionThreadLabel").innerText = currentThreadId.slice(0, 22) + "...";
       switchUser();
+      showToast("Conversation thread reset!", "success");
     }
 
     function filterCategory(cat) {
       currentCategory = cat;
       const btns = document.querySelectorAll(".category-btn");
       btns.forEach(b => {
-        if ((cat === '' && b.innerText === 'All') || b.innerText === cat) {
-          b.className = "category-btn active px-3.5 py-1.5 rounded-full text-xs font-medium bg-amber-600 text-stone-950 transition";
+        if ((cat === '' && b.innerText.includes('All')) || b.innerText === cat) {
+          b.className = "category-btn active px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-stone-950 shadow-sm transition";
         } else {
-          b.className = "category-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 hover:bg-stone-300 transition";
+          b.className = "category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition";
         }
       });
       renderProducts();
@@ -252,38 +369,43 @@
       });
 
       if (filtered.length === 0) {
-        grid.innerHTML = `<div class="col-span-full py-12 text-center text-stone-500 text-sm">No products found matching your filters.</div>`;
+        grid.innerHTML = `<div class="col-span-full py-16 text-center text-stone-500 text-xs">No products found matching your search.</div>`;
         return;
       }
 
       filtered.forEach(p => {
         const card = document.createElement("div");
-        card.className = "bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition duration-200";
+        card.className = "group bg-white rounded-3xl border border-stone-200/80 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden";
         card.innerHTML = `
-          <div class="h-44 w-full bg-stone-100 overflow-hidden relative">
-            <img src="${p.image_url}" alt="${p.name}" class="w-full h-full object-cover">
-            <span class="absolute top-2.5 right-2.5 bg-stone-900/80 backdrop-blur-sm text-amber-400 text-[11px] font-bold px-2 py-0.5 rounded">
+          <div class="h-48 w-full bg-stone-100 overflow-hidden relative cursor-pointer" onclick="openProductModal('${p.id}')">
+            <img src="${p.image_url}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            <span class="absolute top-3 right-3 bg-stone-900/85 backdrop-blur-md text-amber-300 text-xs font-black px-2.5 py-1 rounded-xl shadow-xs">
               $${p.price.toFixed(2)}
             </span>
-            <span class="absolute top-2.5 left-2.5 bg-white/90 backdrop-blur-sm text-stone-700 text-[10px] font-semibold px-2 py-0.5 rounded">
+            <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-stone-700 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg shadow-xs">
               ${p.category}
             </span>
           </div>
-          <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+          <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3.5">
             <div>
-              <div class="flex items-center justify-between">
-                <h4 class="font-bold text-stone-900 text-sm">${p.name}</h4>
-              </div>
-              <p class="text-stone-500 text-xs mt-1 line-clamp-2 leading-relaxed">${p.description}</p>
+              <h4 class="font-bold text-stone-900 text-sm hover:text-amber-600 transition cursor-pointer" onclick="openProductModal('${p.id}')">${p.name}</h4>
+              <p class="text-stone-500 text-xs mt-1.5 line-clamp-2 leading-relaxed">${p.description}</p>
             </div>
-            <div class="pt-2 border-t border-stone-100 flex items-center justify-between">
-              <span class="text-[11px] ${p.stock > 10 ? 'text-emerald-600' : 'text-amber-600'} font-medium">
-                <i class="fa-solid fa-box-open mr-1"></i> ${p.stock} in stock
+            
+            <div class="pt-3 border-t border-stone-100 flex items-center justify-between">
+              <span class="text-[11px] ${p.stock > 10 ? 'text-emerald-600' : 'text-amber-600'} font-semibold flex items-center">
+                <span class="w-1.5 h-1.5 rounded-full ${p.stock > 10 ? 'bg-emerald-500' : 'bg-amber-500'} mr-1.5"></span>
+                ${p.stock} in stock
               </span>
-              <button onclick="askAboutProduct('${p.id}', '${p.name}')" class="text-xs font-semibold bg-stone-900 hover:bg-amber-600 hover:text-stone-950 text-white px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1">
-                <i class="fa-solid fa-comment-dots"></i>
-                <span>Ask Agent</span>
-              </button>
+              <div class="flex items-center space-x-1.5">
+                <button onclick="addToCart('${p.id}')" title="Add to Cart" class="p-2 rounded-xl bg-stone-100 hover:bg-amber-100 text-stone-800 hover:text-amber-900 text-xs font-bold transition">
+                  <i class="fa-solid fa-cart-plus"></i>
+                </button>
+                <button onclick="askAgentAboutProduct('${p.id}', '${p.name}')" class="px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-amber-500 text-white hover:text-stone-950 text-xs font-bold transition flex items-center space-x-1 shadow-xs">
+                  <i class="fa-solid fa-sparkles text-[10px]"></i>
+                  <span>Ask AI</span>
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -291,8 +413,139 @@
       });
     }
 
-    function askAboutProduct(prodId, prodName) {
-      sendQuickPrompt(`Tell me more about ${prodName} and check current stock`);
+    function openProductModal(prodId) {
+      const p = catalog.find(x => x.id === prodId);
+      if (!p) return;
+      const modal = document.getElementById("productModal");
+      const content = document.getElementById("productModalContent");
+      content.innerHTML = `
+        <div class="h-60 w-full overflow-hidden relative">
+          <img src="${p.image_url}" class="w-full h-full object-cover">
+          <span class="absolute top-4 left-4 bg-stone-900/85 backdrop-blur-md text-amber-300 font-black text-sm px-3 py-1 rounded-xl">
+            $${p.price.toFixed(2)}
+          </span>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">${p.category}</span>
+            <h3 class="text-lg font-extrabold text-stone-900 mt-1">${p.name}</h3>
+            <p class="text-xs text-stone-600 mt-2 leading-relaxed">${p.description}</p>
+          </div>
+          <div class="p-3 bg-stone-50 rounded-2xl flex items-center justify-between text-xs">
+            <span class="text-stone-500 font-medium">Inventory Availability:</span>
+            <span class="font-bold ${p.stock > 10 ? 'text-emerald-600' : 'text-amber-600'}">${p.stock} units remaining</span>
+          </div>
+          <div class="flex items-center space-x-3 pt-2">
+            <button onclick="addToCart('${p.id}'); closeProductModal();" class="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-900 font-bold py-2.5 rounded-2xl text-xs transition flex items-center justify-center space-x-1.5">
+              <i class="fa-solid fa-cart-plus"></i>
+              <span>Add to Cart</span>
+            </button>
+            <button onclick="askAgentAboutProduct('${p.id}', '${p.name}'); closeProductModal();" class="flex-1 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold py-2.5 rounded-2xl text-xs transition flex items-center justify-center space-x-1.5 shadow-md shadow-amber-500/20">
+              <i class="fa-solid fa-robot"></i>
+              <span>Consult ShopBot</span>
+            </button>
+          </div>
+        </div>
+      `;
+      modal.classList.remove("hidden");
+    }
+
+    function closeProductModal() {
+      document.getElementById("productModal").classList.add("hidden");
+    }
+
+    function addToCart(prodId) {
+      const p = catalog.find(x => x.id === prodId);
+      if (!p) return;
+      const existing = cart.find(it => it.id === prodId);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ ...p, quantity: 1 });
+      }
+      updateCartUI();
+      showToast(`Added ${p.name} to cart!`, "success");
+    }
+
+    function toggleCartDrawer() {
+      const drawer = document.getElementById("cartDrawer");
+      const backdrop = document.getElementById("cartBackdrop");
+      const panel = document.getElementById("cartPanel");
+
+      const isOpen = !drawer.classList.contains("pointer-events-none");
+      if (isOpen) {
+        panel.classList.add("translate-x-full");
+        backdrop.classList.add("opacity-0");
+        setTimeout(() => drawer.classList.add("pointer-events-none"), 300);
+      } else {
+        drawer.classList.remove("pointer-events-none");
+        setTimeout(() => {
+          backdrop.classList.remove("opacity-0");
+          panel.classList.remove("translate-x-full");
+        }, 10);
+      }
+    }
+
+    function updateCartUI() {
+      const badge = document.getElementById("cartBadge");
+      const list = document.getElementById("cartItemsList");
+      const totalCount = cart.reduce((acc, it) => acc + it.quantity, 0);
+      badge.innerText = totalCount;
+
+      list.innerHTML = "";
+      if (cart.length === 0) {
+        list.innerHTML = `<div class="py-16 text-center text-stone-400 text-xs">Your shopping cart is empty.</div>`;
+        document.getElementById("cartSubtotal").innerText = "$0.00";
+        document.getElementById("cartDiscount").innerText = "-$0.00";
+        document.getElementById("cartTotal").innerText = "$0.00";
+        return;
+      }
+
+      let subtotal = 0;
+      cart.forEach((it, idx) => {
+        subtotal += it.price * it.quantity;
+        const div = document.createElement("div");
+        div.className = "py-3 flex items-center justify-between";
+        div.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <img src="${it.image_url}" class="w-12 h-12 rounded-xl object-cover border border-stone-200">
+            <div>
+              <h5 class="text-xs font-bold text-stone-900 leading-tight">${it.name}</h5>
+              <span class="text-[11px] text-amber-600 font-semibold">$${it.price.toFixed(2)}</span>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="changeCartQty(${idx}, -1)" class="w-6 h-6 rounded-lg bg-stone-100 hover:bg-stone-200 text-xs font-bold">-</button>
+            <span class="text-xs font-bold w-4 text-center">${it.quantity}</span>
+            <button onclick="changeCartQty(${idx}, 1)" class="w-6 h-6 rounded-lg bg-stone-100 hover:bg-stone-200 text-xs font-bold">+</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+
+      const discount = totalCount >= 3 ? subtotal * 0.05 : 0;
+      const total = subtotal - discount;
+
+      document.getElementById("cartSubtotal").innerText = `$${subtotal.toFixed(2)}`;
+      document.getElementById("cartDiscount").innerText = `-$${discount.toFixed(2)} (${totalCount >= 3 ? '5% Bulk' : 'None'})`;
+      document.getElementById("cartTotal").innerText = `$${total.toFixed(2)}`;
+    }
+
+    function changeCartQty(idx, delta) {
+      cart[idx].quantity += delta;
+      if (cart[idx].quantity <= 0) cart.splice(idx, 1);
+      updateCartUI();
+    }
+
+    function checkoutViaAgent() {
+      if (cart.length === 0) return;
+      toggleCartDrawer();
+      const first = cart[0];
+      sendQuickPrompt(`buy ${first.quantity} ${first.id}`);
+    }
+
+    function askAgentAboutProduct(prodId, prodName) {
+      sendQuickPrompt(`Tell me about ${prodName} and verify if it's in stock`);
     }
 
     function sendQuickPrompt(text) {
@@ -310,7 +563,6 @@
       appendMessage("user", message);
       document.getElementById("riskConfirmBanner").classList.add("hidden");
 
-      // Show typing indicator
       const typingId = appendTypingIndicator();
 
       try {
@@ -334,25 +586,22 @@
 
         const data = await res.json();
         
-        // Update tokens counter
         totalTokensIn += data.tokens?.in || 0;
         totalTokensOut += data.tokens?.out || 0;
-        document.getElementById("tokenCounter").innerText = `Tokens: in:${totalTokensIn}, out:${totalTokensOut}`;
+        document.getElementById("tokenCounter").innerText = `In: ${totalTokensIn} | Out: ${totalTokensOut}`;
 
-        // Render response with tool badges
         appendMessage("bot", data.reply, data.tool_calls);
 
-        // Check if message requires confirmation
         if (data.reply.includes("Order Confirmation Required")) {
           document.getElementById("riskConfirmBanner").classList.remove("hidden");
+          showToast("Risky action intercepted: Approval required", "warning");
         }
 
-        // Refresh user profile in header in case preferences were updated
         loadUserProfile();
 
       } catch (err) {
         removeMessage(typingId);
-        appendMessage("bot", `Network error contacting agent: ${err.message}`);
+        appendMessage("bot", `Connection error: ${err.message}`);
       }
     }
 
@@ -364,30 +613,33 @@
       let toolsHtml = "";
       if (toolCalls && toolCalls.length > 0) {
         toolsHtml = `
-          <div class="mt-2 pt-2 border-t border-stone-200/60 flex flex-wrap gap-1">
+          <div class="mt-2.5 pt-2 border-t border-stone-200/60 flex flex-wrap gap-1">
             ${toolCalls.map(tc => `
-              <span class="inline-flex items-center text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-mono">
-                <i class="fa-solid fa-gear mr-1 text-[8px] text-amber-600"></i> ${tc.name}
+              <span class="inline-flex items-center text-[10px] bg-amber-50 text-amber-900 border border-amber-200/80 px-2 py-0.5 rounded-md font-mono">
+                <i class="fa-solid fa-wrench mr-1 text-[8px] text-amber-600"></i> ${tc.name}
               </span>
             `).join('')}
           </div>
         `;
       }
 
-      const formattedText = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      const formattedText = text
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\[(prod_\d+)\]/g, '<span class="font-mono bg-stone-100 text-amber-800 px-1 rounded font-bold">[$1]</span>');
 
       if (role === 'user') {
         div.innerHTML = `
-          <div class="bg-amber-600 text-stone-950 font-medium p-3 rounded-2xl rounded-tr-sm shadow-sm text-xs leading-relaxed max-w-[85%]">
+          <div class="bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-semibold p-3.5 rounded-3xl rounded-tr-xs shadow-xs text-xs leading-relaxed max-w-[85%]">
             ${formattedText}
           </div>
         `;
       } else {
         div.innerHTML = `
-          <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold">
+          <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold shadow-xs">
             <i class="fa-solid fa-robot"></i>
           </div>
-          <div class="bg-white p-3 rounded-2xl rounded-tl-sm border border-stone-200 shadow-sm text-xs text-stone-800 leading-relaxed max-w-[85%]">
+          <div class="bg-white p-3.5 rounded-3xl rounded-tl-xs border border-stone-200/80 shadow-xs text-xs text-stone-800 leading-relaxed max-w-[85%]">
             <div>${formattedText}</div>
             ${toolsHtml}
           </div>
@@ -405,11 +657,14 @@
       div.id = id;
       div.className = "flex items-start space-x-2.5";
       div.innerHTML = `
-        <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold">
+        <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold shadow-xs">
           <i class="fa-solid fa-robot"></i>
         </div>
-        <div class="bg-white p-3 rounded-2xl rounded-tl-sm border border-stone-200 shadow-sm text-xs text-stone-500 italic">
-          ShopBot is thinking & checking tools...
+        <div class="bg-white px-4 py-3 rounded-2xl rounded-tl-xs border border-stone-200/80 shadow-xs text-xs text-stone-400 flex items-center space-x-1.5">
+          <span class="w-1.5 h-1.5 bg-amber-500 rounded-full typing-dot"></span>
+          <span class="w-1.5 h-1.5 bg-amber-500 rounded-full typing-dot"></span>
+          <span class="w-1.5 h-1.5 bg-amber-500 rounded-full typing-dot"></span>
+          <span class="text-[11px] text-stone-500 font-medium ml-1">ShopBot reasoning...</span>
         </div>
       `;
       container.appendChild(div);
@@ -420,6 +675,19 @@
     function removeMessage(id) {
       const el = document.getElementById(id);
       if (el) el.remove();
+    }
+
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      const colorClass = type === 'success' ? 'bg-emerald-600 text-white' : type === 'warning' ? 'bg-amber-600 text-white' : 'bg-stone-900 text-white';
+      toast.className = `${colorClass} px-4 py-2.5 rounded-2xl text-xs font-bold shadow-xl flex items-center space-x-2 pointer-events-auto animate-in slide-in-from-top-2 duration-300`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "transition-opacity");
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
     }
 
     window.onload = loadCatalog;
