@@ -153,23 +153,53 @@ def admin_users():
     return users
 
 
-# Static assets
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+# Static assets & HTML Page Handlers
+from fastapi.responses import PlainTextResponse, HTMLResponse, FileResponse
+
+static_candidates = [
+    os.path.join(os.path.dirname(__file__), "static"),
+    os.path.join(os.getcwd(), "shopbot", "static"),
+    os.path.join(os.getcwd(), "public")
+]
+static_dir = next((p for p in static_candidates if os.path.exists(p)), None)
+if static_dir and os.path.exists(static_dir):
+    try:
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    except Exception:
+        pass
 
 
-@app.get("/")
+def load_html(filename: str) -> str:
+    """Safely loads HTML from multiple possible deployment paths."""
+    search_paths = [
+        os.path.join(os.path.dirname(__file__), "static", filename),
+        os.path.join(os.getcwd(), "shopbot", "static", filename),
+        os.path.join(os.getcwd(), "public", filename),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "public", filename),
+        os.path.join("/var/task", "shopbot", "static", filename),
+        os.path.join("/var/task", "public", filename)
+    ]
+    for path in search_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return f.read()
+            except Exception:
+                pass
+    return ""
+
+
+@app.get("/", response_class=HTMLResponse)
 def serve_customer_storefront():
-    index_file = os.path.join(static_dir, "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    return {"message": "ShopBot API is running. Go to /static/index.html or /docs"}
+    content = load_html("index.html")
+    if content:
+        return HTMLResponse(content=content, status_code=200)
+    return HTMLResponse(content="<h2>ShopBot Storefront Loading...</h2><p>Please refresh in a moment.</p>", status_code=200)
 
 
-@app.get("/admin")
+@app.get("/admin", response_class=HTMLResponse)
 def serve_admin_dashboard():
-    admin_file = os.path.join(static_dir, "admin.html")
-    if os.path.exists(admin_file):
-        return FileResponse(admin_file)
-    return {"message": "Admin Dashboard. Go to /static/admin.html"}
+    content = load_html("admin.html")
+    if content:
+        return HTMLResponse(content=content, status_code=200)
+    return HTMLResponse(content="<h2>Seller Admin Dashboard Loading...</h2>", status_code=200)
