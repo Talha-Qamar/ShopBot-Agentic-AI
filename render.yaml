@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: shopbot-agentic-storefront
+    env: python
+    buildCommand: pip install -r requirements.txt && pip install fastapi uvicorn langchain-anthropic anthropic psycopg2-binary
+    startCommand: uvicorn shopbot.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ANTHROPIC_MODEL
+        value: claude-haiku-5-5
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false

@@ -1,0 +1,10 @@
+notebooks/
+data/
+docs/
+app/
+ui/
+tests/
+.git/
+.venv/
+*.pdf
+requirements-dev.txt

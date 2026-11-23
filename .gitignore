@@ -1,0 +1,20 @@
+# Secrets
+.env
+
+# Virtual environment
+.venv/
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# LangGraph dev server
+.langgraph_api/
+
+# macOS
+.DS_Store
+
+# SQLite databases
+*.db

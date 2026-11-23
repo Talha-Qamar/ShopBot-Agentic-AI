@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roast & Brew | AI-Powered Artisan Storefront</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .chat-scroll::-webkit-scrollbar { width: 6px; }
+    .chat-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-stone-50 text-stone-900 font-sans min-h-screen flex flex-col">
+
+  <!-- Navigation Bar -->
+  <header class="bg-stone-900 text-stone-100 sticky top-0 z-40 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="text-amber-500 text-2xl"><i class="fa-solid fa-mug-hot"></i></span>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">Roast & Brew <span class="text-xs bg-amber-500/20 text-amber-400 font-mono px-2 py-0.5 rounded ml-2">ShopBot AI</span></h1>
+          <p class="text-xs text-stone-400">Artisan Coffee & Specialty Gear</p>
+        </div>
+      </div>
+
+      <!-- User Persona Switcher (For Evaluation & Isolation Demo) -->
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center bg-stone-800 px-3 py-1.5 rounded-lg border border-stone-700">
+          <label class="text-xs text-stone-400 mr-2 flex items-center"><i class="fa-solid fa-user mr-1 text-amber-400"></i> Persona:</label>
+          <select id="userSelector" class="bg-stone-900 text-xs text-amber-300 font-medium focus:outline-none rounded px-2 py-1 cursor-pointer" onchange="switchUser()">
+            <option value="user_sara">Sara (Loves Dark Roast)</option>
+            <option value="user_omar">Omar (Specialty Brews)</option>
+            <option value="user_guest">Guest Buyer (user_guest)</option>
+          </select>
+        </div>
+
+        <a href="/admin" class="text-xs bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold px-3 py-2 rounded-lg transition flex items-center space-x-1">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Seller Admin</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Store Layout -->
+  <div class="max-w-7xl mx-auto px-4 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
+    
+    <!-- Left Column: Catalog & Products (8 Cols) -->
+    <main class="lg:col-span-7 xl:col-span-8 flex flex-col space-y-6">
+      
+      <!-- Store Banner -->
+      <div class="bg-gradient-to-r from-stone-900 via-stone-800 to-amber-950 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+        <div class="relative z-10 max-w-xl">
+          <span class="text-xs font-semibold uppercase tracking-wider text-amber-400 bg-amber-950/60 px-2.5 py-1 rounded-full border border-amber-800">
+            Powered by LangGraph & Claude Haiku
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold mt-3">Curated Artisan Beans & Handcrafted Gear</h2>
+          <p class="text-stone-300 text-sm mt-2">Chat with our 24/7 AI Sales Assistant to get personalized coffee recommendations, check live stock, or place an order.</p>
+        </div>
+        <div class="absolute right-4 bottom-2 text-stone-800 opacity-20 text-9xl pointer-events-none">
+          <i class="fa-solid fa-seedling"></i>
+        </div>
+      </div>
+
+      <!-- Categories & Search Bar -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0" id="categoryChips">
+          <button onclick="filterCategory('')" class="category-btn active px-3.5 py-1.5 rounded-full text-xs font-medium bg-amber-600 text-stone-950 transition">All</button>
+          <button onclick="filterCategory('Coffee')" class="category-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 hover:bg-stone-300 transition">Coffee</button>
+          <button onclick="filterCategory('Brewing Gear')" class="category-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 hover:bg-stone-300 transition">Brewing Gear</button>
+          <button onclick="filterCategory('Drinkware')" class="category-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 hover:bg-stone-300 transition">Drinkware</button>
+          <button onclick="filterCategory('Pantry')" class="category-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 hover:bg-stone-300 transition">Pantry</button>
+        </div>
+
+        <div class="relative w-full sm:w-64">
+          <input type="text" id="searchInput" placeholder="Search catalog..." oninput="handleSearch()" class="w-full pl-9 pr-4 py-2 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-stone-400 text-xs"></i>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div class="text-center py-12 text-stone-500 col-span-full">Loading catalog...</div>
+      </div>
+    </main>
+
+    <!-- Right Column: Interactive AI Sales Agent (5 Cols) -->
+    <aside class="lg:col-span-5 xl:col-span-4 flex flex-col bg-white rounded-2xl border border-stone-200 shadow-xl overflow-hidden h-[680px]">
+      
+      <!-- Agent Header -->
+      <div class="bg-stone-900 text-white p-4 flex items-center justify-between border-b border-stone-800">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-full bg-amber-500 flex items-center justify-center text-stone-950 font-bold text-lg shadow-sm">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-stone-100 flex items-center">
+              ShopBot Assistant
+              <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 ml-2 animate-pulse"></span>
+            </h3>
+            <p class="text-[11px] text-stone-400" id="sessionThreadLabel">Session: thread_sara_1</p>
+          </div>
+        </div>
+        <button onclick="clearChatThread()" title="New Thread" class="text-stone-400 hover:text-amber-400 text-xs p-1.5 transition">
+          <i class="fa-solid fa-arrows-rotate"></i> Reset
+        </button>
+      </div>
+
+      <!-- Memory Context Pill -->
+      <div class="bg-amber-50 border-b border-amber-200/60 px-4 py-2 flex items-center justify-between text-[11px] text-amber-900">
+        <span class="flex items-center truncate">
+          <i class="fa-solid fa-brain text-amber-600 mr-1.5"></i>
+          <span id="activeUserBadge" class="font-semibold mr-1">User: user_sara</span>
+          <span id="activePreferencesSnippet" class="text-amber-700 truncate">(No preferences yet)</span>
+        </span>
+        <span id="tokenCounter" class="bg-amber-200/70 text-amber-950 px-1.5 py-0.5 rounded font-mono text-[10px]">Tokens: 0</span>
+      </div>
+
+      <!-- Quick Action Prompt Chips -->
+      <div class="px-3 py-2 bg-stone-50 border-b border-stone-200 flex space-x-1.5 overflow-x-auto text-[11px]">
+        <button onclick="sendQuickPrompt('What dark roast coffee do you have in stock?')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-stone-300 hover:border-amber-500 text-stone-700 transition">☕ Dark Roast</button>
+        <button onclick="sendQuickPrompt('Check inventory and price for the kettle')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-stone-300 hover:border-amber-500 text-stone-700 transition">🔍 Check Kettle</button>
+        <button onclick="sendQuickPrompt('I prefer dark roast and pour-over brewing')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-stone-300 hover:border-amber-500 text-stone-700 transition">💾 Save Preference</button>
+        <button onclick="sendQuickPrompt('What are my past orders?')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-stone-300 hover:border-amber-500 text-stone-700 transition">📦 My Orders</button>
+      </div>
+
+      <!-- Chat Messages Container -->
+      <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3.5 chat-scroll bg-stone-50/50">
+        <!-- Initial Welcome Message -->
+        <div class="flex items-start space-x-2.5">
+          <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="bg-white p-3 rounded-2xl rounded-tl-sm border border-stone-200 shadow-sm text-xs text-stone-800 leading-relaxed max-w-[85%]">
+            Hello! I am <strong>ShopBot</strong>, your personal shopping assistant. Ask me about our single-origin coffees, brewing gear, real-time inventory, or tell me your tastes and I'll remember them!
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Confirmation Modal / Alert Banner (When Risky Action Triggered) -->
+      <div id="riskConfirmBanner" class="hidden bg-amber-100 border-t border-amber-300 p-3 text-xs text-amber-950 flex flex-col space-y-2">
+        <div class="flex items-center font-bold text-amber-900">
+          <i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1.5"></i>
+          Risky Action Guard: Order Confirmation
+        </div>
+        <p id="riskConfirmText">Please confirm your order before funds are committed.</p>
+        <div class="flex space-x-2">
+          <button onclick="sendQuickPrompt('YES')" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded text-xs transition">Confirm (YES)</button>
+          <button onclick="sendQuickPrompt('NO')" class="flex-1 bg-stone-300 hover:bg-stone-400 text-stone-800 font-medium py-1.5 px-3 rounded text-xs transition">Cancel (NO)</button>
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <form id="chatForm" onsubmit="handleChatSubmit(event)" class="p-3 bg-white border-t border-stone-200 flex items-center space-x-2">
+        <input type="text" id="chatInput" placeholder="Ask about products, stock, or buy an item..." class="flex-1 bg-stone-100 border border-stone-300 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 text-stone-900">
+        <button type="submit" id="sendBtn" class="bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1 shadow-sm">
+          <span>Send</span>
+          <i class="fa-solid fa-paper-plane text-[10px]"></i>
+        </button>
+      </form>
+
+    </aside>
+  </div>
+
+  <!-- Storefront Logic Script -->
+  <script>
+    let currentUserId = "user_sara";
+    let currentThreadId = `thread_${currentUserId}_${Date.now()}`;
+    let catalog = [];
+    let currentCategory = "";
+    let totalTokensIn = 0;
+    let totalTokensOut = 0;
+
+    async function loadCatalog() {
+      try {
+        const res = await fetch('/api/products');
+        catalog = await res.json();
+        renderProducts();
+        loadUserProfile();
+      } catch (err) {
+        console.error("Failed to load catalog:", err);
+      }
+    }
+
+    async function loadUserProfile() {
+      try {
+        const res = await fetch(`/api/profile?user_id=${encodeURIComponent(currentUserId)}`);
+        const profile = await res.json();
+        const snippet = document.getElementById("activePreferencesSnippet");
+        if (profile && Object.keys(profile).length > 0) {
+          snippet.innerText = `(${JSON.stringify(profile).replace(/[\{\}\"]/g, '')})`;
+        } else {
+          snippet.innerText = "(No preferences yet)";
+        }
+      } catch (e) {}
+    }
+
+    function switchUser() {
+      currentUserId = document.getElementById("userSelector").value;
+      currentThreadId = `thread_${currentUserId}_${Date.now()}`;
+      document.getElementById("activeUserBadge").innerText = `User: ${currentUserId}`;
+      document.getElementById("sessionThreadLabel").innerText = `Session: ${currentThreadId.slice(0, 20)}...`;
+      
+      // Clear chat messages for new user
+      const container = document.getElementById("chatMessages");
+      container.innerHTML = `
+        <div class="flex items-start space-x-2.5">
+          <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="bg-white p-3 rounded-2xl rounded-tl-sm border border-stone-200 shadow-sm text-xs text-stone-800 leading-relaxed max-w-[85%]">
+            Switched to persona <strong>${currentUserId}</strong>. All chats, carts, and past orders are strictly isolated from other users!
+          </div>
+        </div>
+      `;
+      loadUserProfile();
+    }
+
+    function clearChatThread() {
+      currentThreadId = `thread_${currentUserId}_${Date.now()}`;
+      document.getElementById("sessionThreadLabel").innerText = `Session: ${currentThreadId.slice(0, 20)}...`;
+      switchUser();
+    }
+
+    function filterCategory(cat) {
+      currentCategory = cat;
+      const btns = document.querySelectorAll(".category-btn");
+      btns.forEach(b => {
+        if ((cat === '' && b.innerText === 'All') || b.innerText === cat) {
+          b.className = "category-btn active px-3.5 py-1.5 rounded-full text-xs font-medium bg-amber-600 text-stone-950 transition";
+        } else {
+          b.className = "category-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-stone-200 text-stone-700 hover:bg-stone-300 transition";
+        }
+      });
+      renderProducts();
+    }
+
+    function handleSearch() {
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const q = (document.getElementById("searchInput")?.value || "").toLowerCase();
+      const grid = document.getElementById("productsGrid");
+      grid.innerHTML = "";
+
+      const filtered = catalog.filter(p => {
+        const matchesCat = !currentCategory || p.category.toLowerCase() === currentCategory.toLowerCase();
+        const matchesQ = !q || p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q);
+        return matchesCat && matchesQ;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-12 text-center text-stone-500 text-sm">No products found matching your filters.</div>`;
+        return;
+      }
+
+      filtered.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition duration-200";
+        card.innerHTML = `
+          <div class="h-44 w-full bg-stone-100 overflow-hidden relative">
+            <img src="${p.image_url}" alt="${p.name}" class="w-full h-full object-cover">
+            <span class="absolute top-2.5 right-2.5 bg-stone-900/80 backdrop-blur-sm text-amber-400 text-[11px] font-bold px-2 py-0.5 rounded">
+              $${p.price.toFixed(2)}
+            </span>
+            <span class="absolute top-2.5 left-2.5 bg-white/90 backdrop-blur-sm text-stone-700 text-[10px] font-semibold px-2 py-0.5 rounded">
+              ${p.category}
+            </span>
+          </div>
+          <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+            <div>
+              <div class="flex items-center justify-between">
+                <h4 class="font-bold text-stone-900 text-sm">${p.name}</h4>
+              </div>
+              <p class="text-stone-500 text-xs mt-1 line-clamp-2 leading-relaxed">${p.description}</p>
+            </div>
+            <div class="pt-2 border-t border-stone-100 flex items-center justify-between">
+              <span class="text-[11px] ${p.stock > 10 ? 'text-emerald-600' : 'text-amber-600'} font-medium">
+                <i class="fa-solid fa-box-open mr-1"></i> ${p.stock} in stock
+              </span>
+              <button onclick="askAboutProduct('${p.id}', '${p.name}')" class="text-xs font-semibold bg-stone-900 hover:bg-amber-600 hover:text-stone-950 text-white px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1">
+                <i class="fa-solid fa-comment-dots"></i>
+                <span>Ask Agent</span>
+              </button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function askAboutProduct(prodId, prodName) {
+      sendQuickPrompt(`Tell me more about ${prodName} and check current stock`);
+    }
+
+    function sendQuickPrompt(text) {
+      document.getElementById("chatInput").value = text;
+      handleChatSubmit(new Event('submit'));
+    }
+
+    async function handleChatSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById("chatInput");
+      const message = input.value.trim();
+      if (!message) return;
+      input.value = "";
+
+      appendMessage("user", message);
+      document.getElementById("riskConfirmBanner").classList.add("hidden");
+
+      // Show typing indicator
+      const typingId = appendTypingIndicator();
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: currentUserId,
+            thread_id: currentThreadId,
+            message: message
+          })
+        });
+
+        removeMessage(typingId);
+
+        if (!res.ok) {
+          const errText = await res.text();
+          appendMessage("bot", `Error: ${errText}`);
+          return;
+        }
+
+        const data = await res.json();
+        
+        // Update tokens counter
+        totalTokensIn += data.tokens?.in || 0;
+        totalTokensOut += data.tokens?.out || 0;
+        document.getElementById("tokenCounter").innerText = `Tokens: in:${totalTokensIn}, out:${totalTokensOut}`;
+
+        // Render response with tool badges
+        appendMessage("bot", data.reply, data.tool_calls);
+
+        // Check if message requires confirmation
+        if (data.reply.includes("Order Confirmation Required")) {
+          document.getElementById("riskConfirmBanner").classList.remove("hidden");
+        }
+
+        // Refresh user profile in header in case preferences were updated
+        loadUserProfile();
+
+      } catch (err) {
+        removeMessage(typingId);
+        appendMessage("bot", `Network error contacting agent: ${err.message}`);
+      }
+    }
+
+    function appendMessage(role, text, toolCalls = []) {
+      const container = document.getElementById("chatMessages");
+      const div = document.createElement("div");
+      div.className = `flex items-start space-x-2.5 ${role === 'user' ? 'justify-end' : ''}`;
+
+      let toolsHtml = "";
+      if (toolCalls && toolCalls.length > 0) {
+        toolsHtml = `
+          <div class="mt-2 pt-2 border-t border-stone-200/60 flex flex-wrap gap-1">
+            ${toolCalls.map(tc => `
+              <span class="inline-flex items-center text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-mono">
+                <i class="fa-solid fa-gear mr-1 text-[8px] text-amber-600"></i> ${tc.name}
+              </span>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      const formattedText = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+      if (role === 'user') {
+        div.innerHTML = `
+          <div class="bg-amber-600 text-stone-950 font-medium p-3 rounded-2xl rounded-tr-sm shadow-sm text-xs leading-relaxed max-w-[85%]">
+            ${formattedText}
+          </div>
+        `;
+      } else {
+        div.innerHTML = `
+          <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="bg-white p-3 rounded-2xl rounded-tl-sm border border-stone-200 shadow-sm text-xs text-stone-800 leading-relaxed max-w-[85%]">
+            <div>${formattedText}</div>
+            ${toolsHtml}
+          </div>
+        `;
+      }
+
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function appendTypingIndicator() {
+      const container = document.getElementById("chatMessages");
+      const id = "typing_" + Date.now();
+      const div = document.createElement("div");
+      div.id = id;
+      div.className = "flex items-start space-x-2.5";
+      div.innerHTML = `
+        <div class="w-7 h-7 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-stone-950 text-xs font-bold">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="bg-white p-3 rounded-2xl rounded-tl-sm border border-stone-200 shadow-sm text-xs text-stone-500 italic">
+          ShopBot is thinking & checking tools...
+        </div>
+      `;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+      return id;
+    }
+
+    function removeMessage(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    }
+
+    window.onload = loadCatalog;
+  </script>
+</body>
+</html>
