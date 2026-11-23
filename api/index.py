@@ -1,5 +1,6 @@
 import sys
 import os
+import urllib.parse
 
 # Add root directory to python path for Vercel Serverless Functions
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -19,33 +20,42 @@ except Exception as e:
 class VercelRoutingMiddleware:
     """
     Middleware to resolve Vercel serverless rewrite paths.
-    Vercel rewrites often set scope['path'] to the destination file ('/api/index.py').
-    This middleware restores the original requested path from Vercel's 'x-matched-path'
-    or 'x-forwarded-uri' headers so Starlette/FastAPI route matching works perfectly.
+    Extracts the original requested path passed via __path__=$1 in vercel.json
+    or from Vercel's x-matched-path / x-forwarded-uri headers, ensuring
+    exact FastAPI routing across all endpoints (/health, /admin, /api/products, etc.).
     """
     def __init__(self, asgi_app):
         self.asgi_app = asgi_app
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
-            headers = dict(scope.get("headers", []))
-            header_map = {k.decode("latin1").lower(): v.decode("latin1") for k, v in headers.items()}
+            raw_qs = scope.get("query_string", b"").decode("latin1")
+            parsed_qs = urllib.parse.parse_qs(raw_qs)
             
-            # Check original path from Vercel
-            matched_path = (
-                header_map.get("x-matched-path")
-                or header_map.get("x-forwarded-uri")
-                or header_map.get("x-original-url")
-            )
-            
+            target_path = None
+            if "__path__" in parsed_qs:
+                target_path = "/" + parsed_qs.pop("__path__", [""])[0].lstrip("/")
+                # Clean __path__ out of query string so endpoint params remain clean
+                clean_qs = urllib.parse.urlencode([(k, v) for k, vs in parsed_qs.items() for v in vs])
+                scope["query_string"] = clean_qs.encode("latin1")
+
+            # Fallback to headers if __path__ was not in query string
+            if not target_path:
+                headers = dict(scope.get("headers", []))
+                header_map = {k.decode("latin1").lower(): v.decode("latin1") for k, v in headers.items()}
+                matched = (
+                    header_map.get("x-matched-path")
+                    or header_map.get("x-forwarded-uri")
+                    or header_map.get("x-original-url")
+                )
+                if matched:
+                    target_path = matched.split("?")[0]
+
             current_path = scope.get("path", "")
-            if matched_path:
-                clean_path = matched_path.split("?")[0]
-                # If current_path is the entrypoint or doesn't match, map to original
-                if current_path in ["/api/index.py", "/api/index", "/api", "", "/"] or current_path.endswith(".py"):
-                    scope["path"] = clean_path
-                    scope["raw_path"] = clean_path.encode("latin1")
-            elif current_path.endswith(".py"):
+            if target_path:
+                scope["path"] = target_path
+                scope["raw_path"] = target_path.encode("latin1")
+            elif current_path in ["/api/index.py", "/api/index", "/api"] or current_path.endswith(".py"):
                 scope["path"] = "/"
                 scope["raw_path"] = b"/"
 
