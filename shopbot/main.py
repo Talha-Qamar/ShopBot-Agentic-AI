@@ -67,10 +67,10 @@ class ChatResponse(BaseModel):
     tokens: Dict[str, int]
 
 
-# 1. REQUIRED ENDPOINTS FOR GRADING (Support both direct and /api prefixes)
+# 1. REQUIRED ENDPOINTS FOR GRADING (Support both direct and /api prefixes, GET & HEAD)
 
-@app.get("/health", response_class=PlainTextResponse)
-@app.get("/api/health", response_class=PlainTextResponse)
+@app.api_route("/health", methods=["GET", "HEAD"], response_class=PlainTextResponse)
+@app.api_route("/api/health", methods=["GET", "HEAD"], response_class=PlainTextResponse)
 def health_check():
     """Returns 'ok' as strictly required by hackathon specification."""
     return "ok"
@@ -209,8 +209,8 @@ def serve_customer_storefront():
     return HTMLResponse(content=content or STOREFRONT_HTML, status_code=200)
 
 
-@app.get("/admin", response_class=HTMLResponse)
-@app.get("/api/admin", response_class=HTMLResponse)
+@app.api_route("/admin", methods=["GET", "HEAD"], response_class=HTMLResponse)
+@app.api_route("/api/admin", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def serve_admin_dashboard():
     content = load_html("admin.html")
     return HTMLResponse(content=content or ADMIN_HTML, status_code=200)
