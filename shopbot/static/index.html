@@ -100,7 +100,8 @@
       <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
         <div class="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0" id="categoryChips">
           <button onclick="filterCategory('')" class="category-btn active px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-stone-950 shadow-sm transition">All Items</button>
-          <button onclick="filterCategory('Coffee')" class="category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition">Coffee</button>
+          <button onclick="filterCategory('Coffee')" class="category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition">☕ Coffee</button>
+          <button onclick="filterCategory('Food & Bakery')" class="category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition">🥐 Food & Bakery</button>
           <button onclick="filterCategory('Brewing Gear')" class="category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition">Brewing Gear</button>
           <button onclick="filterCategory('Drinkware')" class="category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition">Drinkware</button>
           <button onclick="filterCategory('Pantry')" class="category-btn px-4 py-2 rounded-xl text-xs font-semibold bg-white border border-stone-200 text-stone-700 hover:border-amber-400 transition">Pantry</button>
@@ -163,6 +164,9 @@
 
       <!-- Dynamic Suggestion Quick Chips -->
       <div class="px-3.5 py-2 bg-stone-50 border-b border-stone-100 flex space-x-1.5 overflow-x-auto text-[11px] scrollbar-none" id="quickChipsContainer">
+        <button onclick="sendQuickPrompt('Do you have fresh croissants, stroopwafels, or bakery snacks to pair with coffee?')" class="whitespace-nowrap px-3 py-1 rounded-full bg-white border border-stone-200 hover:border-amber-400 text-stone-700 transition flex items-center space-x-1 shadow-2xs">
+          <span>🥐</span> <span>Fresh Bakery</span>
+        </button>
         <button onclick="sendQuickPrompt('What dark roast coffee do you have in stock?')" class="whitespace-nowrap px-3 py-1 rounded-full bg-white border border-stone-200 hover:border-amber-400 text-stone-700 transition flex items-center space-x-1 shadow-2xs">
           <span>☕</span> <span>Dark Roast</span>
         </button>
@@ -277,9 +281,24 @@
 
   <!-- Storefront Logic Script -->
   <script>
+    const DEFAULT_PRODUCTS = [
+      { id: "prod_1", name: "Artisan Dark Roast Coffee", category: "Coffee", price: 18.50, stock: 45, description: "Rich, full-bodied dark roast with notes of dark chocolate and caramel. 12oz whole bean.", image_url: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=500&q=80" },
+      { id: "prod_2", name: "Single-Origin Ethiopian Light Roast", category: "Coffee", price: 21.00, stock: 30, description: "Floral and fruity tasting notes of bergamot and blueberry. 12oz whole bean.", image_url: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500&q=80" },
+      { id: "prod_8", name: "Fresh French Butter Croissants (Box of 4)", category: "Food & Bakery", price: 14.50, stock: 25, description: "Flaky, golden all-butter croissants freshly baked every morning. Perfect paired with artisan espresso.", image_url: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=500&q=80" },
+      { id: "prod_9", name: "Dark Chocolate Espresso Biscotti (Pack of 6)", category: "Food & Bakery", price: 11.00, stock: 35, description: "Twice-baked almond biscotti dipped in 70% dark chocolate. Designed for dunking.", image_url: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&q=80" },
+      { id: "prod_10", name: "Artisan Caramel Stroopwafels (Box of 8)", category: "Food & Bakery", price: 12.99, stock: 40, description: "Authentic Dutch cinnamon-spiced waffles with gooey brown sugar caramel filling.", image_url: "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=500&q=80" },
+      { id: "prod_11", name: "Organic Wildflower Honey & Granola", category: "Food & Bakery", price: 13.50, stock: 20, description: "Handmade toasted rolled oats, walnuts, and dried cherries drizzled with pure wildflower honey.", image_url: "https://images.unsplash.com/photo-1517093157656-b9ec80c58e51?w=500&q=80" },
+      { id: "prod_12", name: "Single-Origin 85% Dark Chocolate Bar", category: "Food & Bakery", price: 8.50, stock: 50, description: "Bean-to-bar fair trade dark chocolate with notes of roasted cacao and dried plum.", image_url: "https://images.unsplash.com/photo-1548907040-4baa42d10919?w=500&q=80" },
+      { id: "prod_3", name: "Ceramic Pour-Over Coffee Dripper", category: "Brewing Gear", price: 28.00, stock: 15, description: "Handcrafted ceramic pour-over cone for maximum temperature stability.", image_url: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&q=80" },
+      { id: "prod_4", name: "Barista Grade Stainless Kettle", category: "Brewing Gear", price: 48.00, stock: 12, description: "Gooseneck temperature-control kettle for precise pour flow.", image_url: "https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=500&q=80" },
+      { id: "prod_5", name: "Double-Walled Insulated Travel Tumbler", category: "Drinkware", price: 24.50, stock: 50, description: "16oz leak-proof vacuum tumbler keeps coffee piping hot for 8 hours.", image_url: "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=500&q=80" },
+      { id: "prod_6", name: "Organic Oat Milk Barista Edition (Pack of 6)", category: "Pantry", price: 19.99, stock: 25, description: "Creamy plant-based milk designed for foaming silky microfoam.", image_url: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80" },
+      { id: "prod_7", name: "Digital Precision Coffee Scale & Timer", category: "Brewing Gear", price: 32.00, stock: 20, description: "Measures to 0.1g accuracy with built-in auto-tare and extraction timer.", image_url: "https://images.unsplash.com/photo-1511920170033-f8396924c348?w=500&q=80" }
+    ];
+
     let currentUserId = "user_sara";
     let currentThreadId = `thread_${currentUserId}_${Date.now()}`;
-    let catalog = [];
+    let catalog = [...DEFAULT_PRODUCTS];
     let currentCategory = "";
     let cart = [];
     let totalTokensIn = 0;
@@ -288,11 +307,14 @@
     async function loadCatalog() {
       try {
         const res = await fetch('/api/products');
-        catalog = await res.json();
-        renderProducts();
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          catalog = data;
+          renderProducts();
+        }
         loadUserProfile();
       } catch (err) {
-        console.error("Failed to load catalog:", err);
+        console.warn("Using offline catalog fallback:", err);
       }
     }
 
@@ -690,7 +712,10 @@
       }, 3500);
     }
 
-    window.onload = loadCatalog;
+    window.onload = () => {
+      renderProducts();
+      loadCatalog();
+    };
   </script>
 </body>
 </html>

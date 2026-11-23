@@ -122,28 +122,34 @@ def init_db():
 
     conn.commit()
 
-    # Seed products if empty
-    cur.execute("SELECT COUNT(*) FROM products;")
-    count = cur.fetchone()[0]
-    if count == 0:
-        seed_products = [
-            ("prod_1", "Artisan Dark Roast Coffee", "Coffee", 18.50, 45, "Rich, full-bodied dark roast with notes of dark chocolate and caramel. 12oz whole bean.", "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=500&q=80"),
-            ("prod_2", "Single-Origin Ethiopian Light Roast", "Coffee", 21.00, 30, "Floral and fruity tasting notes of bergamot and blueberry. 12oz whole bean.", "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500&q=80"),
-            ("prod_3", "Ceramic Pour-Over Coffee Dripper", "Brewing Gear", 28.00, 15, "Handcrafted ceramic pour-over cone for maximum temperature stability.", "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&q=80"),
-            ("prod_4", "Barista Grade Stainless Kettle", "Brewing Gear", 48.00, 12, "Gooseneck temperature-control kettle for precise pour flow.", "https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=500&q=80"),
-            ("prod_5", "Double-Walled Insulated Travel Tumbler", "Drinkware", 24.50, 50, "16oz leak-proof vacuum tumbler keeps coffee piping hot for 8 hours.", "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=500&q=80"),
-            ("prod_6", "Organic Oat Milk Barista Edition (Pack of 6)", "Pantry", 19.99, 25, "Creamy plant-based milk designed for foaming silky microfoam.", "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80"),
-            ("prod_7", "Digital Precision Coffee Scale & Timer", "Brewing Gear", 32.00, 20, "Measures to 0.1g accuracy with built-in auto-tare and extraction timer.", "https://images.unsplash.com/photo-1511920170033-f8396924c348?w=500&q=80")
-        ]
-        for p in seed_products:
+    # Ensure all seed products exist (insert if not present)
+    seed_products = [
+        ("prod_1", "Artisan Dark Roast Coffee", "Coffee", 18.50, 45, "Rich, full-bodied dark roast with notes of dark chocolate and caramel. 12oz whole bean.", "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=500&q=80"),
+        ("prod_2", "Single-Origin Ethiopian Light Roast", "Coffee", 21.00, 30, "Floral and fruity tasting notes of bergamot and blueberry. 12oz whole bean.", "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500&q=80"),
+        ("prod_3", "Ceramic Pour-Over Coffee Dripper", "Brewing Gear", 28.00, 15, "Handcrafted ceramic pour-over cone for maximum temperature stability.", "https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&q=80"),
+        ("prod_4", "Barista Grade Stainless Kettle", "Brewing Gear", 48.00, 12, "Gooseneck temperature-control kettle for precise pour flow.", "https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=500&q=80"),
+        ("prod_5", "Double-Walled Insulated Travel Tumbler", "Drinkware", 24.50, 50, "16oz leak-proof vacuum tumbler keeps coffee piping hot for 8 hours.", "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=500&q=80"),
+        ("prod_6", "Organic Oat Milk Barista Edition (Pack of 6)", "Pantry", 19.99, 25, "Creamy plant-based milk designed for foaming silky microfoam.", "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80"),
+        ("prod_7", "Digital Precision Coffee Scale & Timer", "Brewing Gear", 32.00, 20, "Measures to 0.1g accuracy with built-in auto-tare and extraction timer.", "https://images.unsplash.com/photo-1511920170033-f8396924c348?w=500&q=80"),
+        ("prod_8", "Fresh French Butter Croissants (Box of 4)", "Food & Bakery", 14.50, 25, "Flaky, golden all-butter croissants freshly baked every morning. Perfect paired with artisan espresso.", "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=500&q=80"),
+        ("prod_9", "Dark Chocolate Espresso Biscotti (Pack of 6)", "Food & Bakery", 11.00, 35, "Twice-baked almond biscotti dipped in 70% dark chocolate. Designed for dunking.", "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&q=80"),
+        ("prod_10", "Artisan Caramel Stroopwafels (Box of 8)", "Food & Bakery", 12.99, 40, "Authentic Dutch cinnamon-spiced waffles with gooey brown sugar caramel filling.", "https://images.unsplash.com/photo-1587314168485-3236d6710814?w=500&q=80"),
+        ("prod_11", "Organic Wildflower Honey & Granola", "Food & Bakery", 13.50, 20, "Handmade toasted rolled oats, walnuts, and dried cherries drizzled with pure wildflower honey.", "https://images.unsplash.com/photo-1517093157656-b9ec80c58e51?w=500&q=80"),
+        ("prod_12", "Single-Origin 85% Dark Chocolate Bar", "Food & Bakery", 8.50, 50, "Bean-to-bar fair trade dark chocolate with notes of roasted cacao and dried plum.", "https://images.unsplash.com/photo-1548907040-4baa42d10919?w=500&q=80")
+    ]
+    for p in seed_products:
+        if USE_POSTGRES:
             cur.execute("""
                 INSERT INTO products (id, name, category, price, stock, description, image_url)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """ if USE_POSTGRES else """
-                INSERT INTO products (id, name, category, price, stock, description, image_url)
+                ON CONFLICT (id) DO NOTHING
+            """, p)
+        else:
+            cur.execute("""
+                INSERT OR IGNORE INTO products (id, name, category, price, stock, description, image_url)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, p)
-        conn.commit()
+    conn.commit()
 
     conn.close()
 
@@ -173,6 +179,25 @@ def search_products(query: Optional[str] = None, category: Optional[str] = None)
             "description": r[5], "image_url": r[6]
         })
     conn.close()
+
+    # Safeguard for cold serverless boots: initialize if table was empty
+    if not results and not query and not category:
+        try:
+            init_db()
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute(sql, params)
+            rows = cur.fetchall()
+            for r in rows:
+                results.append({
+                    "id": r[0], "name": r[1], "category": r[2],
+                    "price": float(r[3]), "stock": int(r[4]),
+                    "description": r[5], "image_url": r[6]
+                })
+            conn.close()
+        except Exception:
+            pass
+
     return results
 
 

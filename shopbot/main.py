@@ -67,15 +67,17 @@ class ChatResponse(BaseModel):
     tokens: Dict[str, int]
 
 
-# 1. REQUIRED ENDPOINTS FOR GRADING
+# 1. REQUIRED ENDPOINTS FOR GRADING (Support both direct and /api prefixes)
 
 @app.get("/health", response_class=PlainTextResponse)
+@app.get("/api/health", response_class=PlainTextResponse)
 def health_check():
     """Returns 'ok' as strictly required by hackathon specification."""
     return "ok"
 
 
 @app.post("/chat", response_model=ChatResponse)
+@app.post("/api/chat", response_model=ChatResponse)
 def chat_endpoint(payload: ChatRequest):
     """
     Main Agent Endpoint for automated grading and live chat:
@@ -101,36 +103,42 @@ def chat_endpoint(payload: ChatRequest):
 # 2. STOREFRONT & ADMIN APIS
 
 @app.get("/api/products")
+@app.get("/products")
 def list_products(query: Optional[str] = None, category: Optional[str] = None):
     """Returns products for the customer storefront."""
     return search_products(query=query, category=category)
 
 
 @app.get("/api/orders")
+@app.get("/orders")
 def list_user_orders(user_id: str = Query(..., description="User ID for isolated orders")):
     """Returns orders strictly isolated for the given user_id."""
     return get_user_orders(user_id=user_id)
 
 
 @app.get("/api/profile")
+@app.get("/profile")
 def get_profile(user_id: str = Query(..., description="User ID for profile")):
     """Returns persistent long-term memory for user_id."""
     return get_user_profile(user_id=user_id)
 
 
 @app.get("/api/admin/metrics")
+@app.get("/admin/metrics")
 def admin_metrics():
     """Returns store overview metrics for Seller Admin Dashboard."""
     return get_admin_metrics()
 
 
 @app.get("/api/admin/orders")
+@app.get("/admin/orders")
 def admin_orders():
     """Returns all store orders for Seller Admin Dashboard."""
     return get_all_orders_admin()
 
 
 @app.get("/api/admin/users")
+@app.get("/admin/users")
 def admin_users():
     """Returns all customer profiles and long-term memory records."""
     conn = get_connection()
@@ -193,12 +201,16 @@ def load_html(filename: str) -> str:
 
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/api", response_class=HTMLResponse)
+@app.get("/api/index", response_class=HTMLResponse)
+@app.get("/api/index.py", response_class=HTMLResponse)
 def serve_customer_storefront():
     content = load_html("index.html")
     return HTMLResponse(content=content or STOREFRONT_HTML, status_code=200)
 
 
 @app.get("/admin", response_class=HTMLResponse)
+@app.get("/api/admin", response_class=HTMLResponse)
 def serve_admin_dashboard():
     content = load_html("admin.html")
     return HTMLResponse(content=content or ADMIN_HTML, status_code=200)
